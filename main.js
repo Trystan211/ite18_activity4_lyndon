@@ -77,7 +77,7 @@ loader.load(
     'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb', // Replace with the URL to your buoy model
     (gltf) => {
         buoy = gltf.scene;
-        buoy.position.set(1, -2, 1); 
+        buoy.position.set(1, -4, 1); 
         scene.add(buoy);
 
         // Check if the buoy is huge right after loading
