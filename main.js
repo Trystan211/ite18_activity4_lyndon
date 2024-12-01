@@ -4,7 +4,7 @@ import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 10, 50); // Add fog for depth effect
+scene.background = new THREE.Color(0x000011); // Dark blue for night sky
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
