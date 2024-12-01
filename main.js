@@ -87,7 +87,7 @@ loader.load(
         console.log('Buoy dimensions:', size);
 
         // Apply a suitable scale
-        buoy.scale.set(0.2, 0.2, 0.2); // Adjust scale as needed
+        buoy.scale.set(0.4, 0.4, 0.4); // Adjust scale as needed
     },
     undefined,
     (error) => {
