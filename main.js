@@ -23,7 +23,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
 const dynamicLight = new THREE.PointLight(0xffffff, 2, 50);
-dynamicLight.position.set(0, 10, 0); // Initial light position
+dynamicLight.position.set(0, 25, 0); // Initial light position
 scene.add(dynamicLight);
 
 // Ocean Geometry
@@ -87,7 +87,7 @@ loader.load(
         console.log('Buoy dimensions:', size);
 
         // Apply a suitable scale
-        buoy.scale.set(0.5, 0.5, 0.5); // Adjust scale as needed
+        buoy.scale.set(0.1, 0.1, 0.1); // Adjust scale as needed
     },
     undefined,
     (error) => {
