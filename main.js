@@ -23,7 +23,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
 const dynamicLight = new THREE.PointLight(0xffffff, 2, 50);
-dynamicLight.position.set(0, 25, 0); // Initial light position
+dynamicLight.position.set(0, 5, 0); // Initial light position
 scene.add(dynamicLight);
 
 // Ocean Geometry
@@ -77,7 +77,7 @@ loader.load(
     'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb', // Replace with the URL to your buoy model
     (gltf) => {
         buoy = gltf.scene;
-        buoy.position.set(1, 2.5, 1); // Position the buoy above the water
+        buoy.position.set(1, 1, 1); // Position the buoy above the water
         scene.add(buoy);
 
         // Check if the buoy is huge right after loading
@@ -87,7 +87,7 @@ loader.load(
         console.log('Buoy dimensions:', size);
 
         // Apply a suitable scale
-        buoy.scale.set(0.1, 0.1, 0.1); // Adjust scale as needed
+        buoy.scale.set(0.2, 0.2, 0.2); // Adjust scale as needed
     },
     undefined,
     (error) => {
