@@ -77,17 +77,9 @@ loader.load(
     'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb', // Replace with the URL to your buoy model
     (gltf) => {
         buoy = gltf.scene;
-        buoy.position.set(1, -1.5, 1); 
+        buoy.position.set(1, 0, 1); // Starting position adjusted
+        buoy.scale.set(0.2, 0.2, 0.2); // Scale down the buoy
         scene.add(buoy);
-
-        // Check if the buoy is huge right after loading
-        const box = new THREE.Box3().setFromObject(buoy);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        console.log('Buoy dimensions:', size);
-
-        // Apply a suitable scale
-        buoy.scale.set(0.2, 0.2, 0.2); // Adjust scale as needed
     },
     undefined,
     (error) => {
@@ -150,9 +142,17 @@ function animate() {
 
     // Move the Buoy with the Waves
     if (buoy) {
-        buoy.position.y = 2.5 + Math.sin(elapsedTime * 2) * 0.5; // Bob up and down on the waves
-        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1; // Tilt slightly with the waves
-        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1; // Tilt slightly with the waves
+        const waveHeight = 1.5; // Match this to your `waveHeight` uniform value
+        const waveFrequency = 0.5; // Match this to your `waveFrequency` uniform value
+
+        // Calculate the buoy's Y position based on the wave height at its X/Z
+        const buoyWaveHeight =
+            Math.sin(buoy.position.x * waveFrequency + elapsedTime) * waveHeight * 0.8 +
+            Math.cos(buoy.position.z * waveFrequency + elapsedTime * 1.5) * waveHeight * 0.6;
+
+        buoy.position.y = buoyWaveHeight; // Update buoy's Y position
+        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1; // Add tilt with waves
+        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1; // Add tilt with waves
     }
 
     // Render Scene
