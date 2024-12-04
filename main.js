@@ -10,7 +10,6 @@ scene.background = new THREE.Color(0x000011); // Dark blue for night sky
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000);
 document.body.appendChild(renderer.domElement);
 
 // Camera Setup
@@ -34,32 +33,44 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 1.5 }, // Increased wave height
-        waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
+        waveHeight: { value: 1.5 }, // Wave height
+        waveFrequency: { value: 0.5 }, // Wave frequency
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
+        foamColor: { value: new THREE.Color(0xffffff) }, // Foam color
     },
     vertexShader: `
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
         varying vec2 vUv;
+        varying float vWaveHeight; // Pass wave height to fragment shader
 
         void main() {
             vUv = uv;
             vec3 pos = position;
-            pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
-            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+            float waveY = sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
+            waveY += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+            pos.y += waveY;
+            vWaveHeight = waveY; // Pass calculated wave height
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
     fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
+        uniform vec3 foamColor; // Foam color
         varying vec2 vUv;
+        varying float vWaveHeight; // Wave height from vertex shader
 
         void main() {
-            vec3 color = mix(shallowColor, deepColor, vUv.y);
+            // Interpolate base ocean color
+            vec3 baseColor = mix(shallowColor, deepColor, vUv.y);
+
+            // Add foam where wave height is high
+            float foamFactor = smoothstep(0.8, 1.2, abs(vWaveHeight)); // Adjust thresholds for foam
+            vec3 color = mix(baseColor, foamColor, foamFactor);
+
             gl_FragColor = vec4(color, 1.0);
         }
     `,
@@ -74,11 +85,11 @@ const loader = new GLTFLoader();
 let buoy = null;
 
 loader.load(
-    'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb', // Replace with the URL to your buoy model
+    'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb',
     (gltf) => {
         buoy = gltf.scene;
-        buoy.position.set(1, 0, 1); // Starting position adjusted
-        buoy.scale.set(0.2, 0.2, 0.2); // Scale down the buoy
+        buoy.position.set(0, -1.5, 0); // Lower the buoy below wave height
+        buoy.scale.set(0.2, 0.2, 0.2); // Adjust scale
         scene.add(buoy);
     },
     undefined,
@@ -142,17 +153,9 @@ function animate() {
 
     // Move the Buoy with the Waves
     if (buoy) {
-        const waveHeight = 1.5; // Match this to your `waveHeight` uniform value
-        const waveFrequency = 0.5; // Match this to your `waveFrequency` uniform value
-
-        // Calculate the buoy's Y position based on the wave height at its X/Z
-        const buoyWaveHeight =
-            Math.sin(buoy.position.x * waveFrequency + elapsedTime) * waveHeight * 0.8 +
-            Math.cos(buoy.position.z * waveFrequency + elapsedTime * 1.5) * waveHeight * 0.6;
-
-        buoy.position.y = buoyWaveHeight; // Update buoy's Y position
-        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1; // Add tilt with waves
-        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1; // Add tilt with waves
+        buoy.position.y = -1.5 + Math.sin(elapsedTime * 2) * 0.5; // Bob up and down on the waves
+        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1; // Tilt slightly with the waves
+        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1; // Tilt slightly with the waves
     }
 
     // Render Scene
@@ -168,3 +171,4 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
