@@ -33,18 +33,18 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 1.5 }, // Wave height
-        waveFrequency: { value: 0.5 }, // Wave frequency
+        waveHeight: { value: 1.5 },
+        waveFrequency: { value: 0.5 },
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
-        foamColor: { value: new THREE.Color(0xffffff) }, // Foam color
+        foamColor: { value: new THREE.Color(0xffffff) },
     },
     vertexShader: `
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
         varying vec2 vUv;
-        varying float vWaveHeight; // Pass wave height to fragment shader
+        varying float vWaveHeight;
 
         void main() {
             vUv = uv;
@@ -52,23 +52,22 @@ const oceanMaterial = new THREE.ShaderMaterial({
             float waveY = sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
             waveY += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
             pos.y += waveY;
-            vWaveHeight = waveY; // Pass calculated wave height
+            vWaveHeight = waveY;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
     fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
-        uniform vec3 foamColor; // Foam color
+        uniform vec3 foamColor;
         varying vec2 vUv;
-        varying float vWaveHeight; // Wave height from vertex shader
+        varying float vWaveHeight;
 
         void main() {
-            // Interpolate base ocean color
             vec3 baseColor = mix(shallowColor, deepColor, vUv.y);
 
-            // Add foam where wave height is high
-            float foamFactor = smoothstep(0.8, 1.2, abs(vWaveHeight)); // Adjust thresholds for foam
+            // Foam appears only at wave crests
+            float foamFactor = smoothstep(1.2, 1.5, abs(vWaveHeight)); // Foam only at high wave crests
             vec3 color = mix(baseColor, foamColor, foamFactor);
 
             gl_FragColor = vec4(color, 1.0);
@@ -88,8 +87,8 @@ loader.load(
     'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb',
     (gltf) => {
         buoy = gltf.scene;
-        buoy.position.set(0, -1.5, 0); // Lower the buoy below wave height
-        buoy.scale.set(0.2, 0.2, 0.2); // Adjust scale
+        buoy.position.set(0, 0.5, 0); // Adjusted slightly higher
+        buoy.scale.set(0.2, 0.2, 0.2);
         scene.add(buoy);
     },
     undefined,
@@ -109,7 +108,7 @@ for (let i = 0; i < rainCount; i++) {
     const y = Math.random() * 50;
     const z = (Math.random() - 0.5) * 100;
     rainPositions.push(x, y, z);
-    rainVelocities.push(-0.2 - Math.random() * 0.5); // Rain falls downward
+    rainVelocities.push(-0.2 - Math.random() * 0.5);
 }
 
 rainGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rainPositions, 3));
@@ -137,9 +136,9 @@ function animate() {
     // Update Rain
     const positions = rain.geometry.attributes.position.array;
     for (let i = 0; i < rainCount; i++) {
-        positions[i * 3 + 1] += rainVelocities[i]; // Y-axis movement (falling)
+        positions[i * 3 + 1] += rainVelocities[i];
         if (positions[i * 3 + 1] < 0) {
-            positions[i * 3 + 1] = 50; // Reset rain drop
+            positions[i * 3 + 1] = 50;
         }
     }
     rain.geometry.attributes.position.needsUpdate = true;
@@ -153,9 +152,9 @@ function animate() {
 
     // Move the Buoy with the Waves
     if (buoy) {
-        buoy.position.y = -1.5 + Math.sin(elapsedTime * 2) * 0.5; // Bob up and down on the waves
-        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1; // Tilt slightly with the waves
-        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1; // Tilt slightly with the waves
+        buoy.position.y = 0.5 + Math.sin(elapsedTime * 2) * 0.5;
+        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1;
+        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1;
     }
 
     // Render Scene
