@@ -10,6 +10,7 @@ scene.background = new THREE.Color(0x000011); // Dark blue for night sky
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000000);
 document.body.appendChild(renderer.domElement);
 
 // Camera Setup
@@ -33,43 +34,32 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 1.5 },
-        waveFrequency: { value: 0.5 },
+        waveHeight: { value: 1.5 }, // Increased wave height
+        waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
-        foamColor: { value: new THREE.Color(0xffffff) },
     },
     vertexShader: `
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
         varying vec2 vUv;
-        varying float vWaveHeight;
 
         void main() {
             vUv = uv;
             vec3 pos = position;
-            float waveY = sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
-            waveY += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
-            pos.y += waveY;
-            vWaveHeight = waveY;
+            pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
+            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
     fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
-        uniform vec3 foamColor;
         varying vec2 vUv;
-        varying float vWaveHeight;
 
         void main() {
-            vec3 baseColor = mix(shallowColor, deepColor, vUv.y);
-
-            // Foam appears only at wave crests
-            float foamFactor = smoothstep(1.2, 1.5, abs(vWaveHeight)); // Foam only at high wave crests
-            vec3 color = mix(baseColor, foamColor, foamFactor);
-
+            vec3 color = mix(shallowColor, deepColor, vUv.y);
             gl_FragColor = vec4(color, 1.0);
         }
     `,
@@ -84,11 +74,11 @@ const loader = new GLTFLoader();
 let buoy = null;
 
 loader.load(
-    'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb',
+    'https://trystan211.github.io/ite18_activity4_lyndon/starboard_bifurcation_buoy.glb', // Replace with the URL to your buoy model
     (gltf) => {
         buoy = gltf.scene;
-        buoy.position.set(0, 0.5, 0); // Adjusted slightly higher
-        buoy.scale.set(0.2, 0.2, 0.2);
+        buoy.position.set(1, 0, 1); // Starting position adjusted
+        buoy.scale.set(0.2, 0.2, 0.2); // Scale down the buoy
         scene.add(buoy);
     },
     undefined,
@@ -108,7 +98,7 @@ for (let i = 0; i < rainCount; i++) {
     const y = Math.random() * 50;
     const z = (Math.random() - 0.5) * 100;
     rainPositions.push(x, y, z);
-    rainVelocities.push(-0.2 - Math.random() * 0.5);
+    rainVelocities.push(-0.2 - Math.random() * 0.5); // Rain falls downward
 }
 
 rainGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rainPositions, 3));
@@ -136,9 +126,9 @@ function animate() {
     // Update Rain
     const positions = rain.geometry.attributes.position.array;
     for (let i = 0; i < rainCount; i++) {
-        positions[i * 3 + 1] += rainVelocities[i];
+        positions[i * 3 + 1] += rainVelocities[i]; // Y-axis movement (falling)
         if (positions[i * 3 + 1] < 0) {
-            positions[i * 3 + 1] = 50;
+            positions[i * 3 + 1] = 50; // Reset rain drop
         }
     }
     rain.geometry.attributes.position.needsUpdate = true;
@@ -152,9 +142,17 @@ function animate() {
 
     // Move the Buoy with the Waves
     if (buoy) {
-        buoy.position.y = 0.5 + Math.sin(elapsedTime * 2) * 0.5;
-        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1;
-        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1;
+        const waveHeight = 1.5; // Match this to your `waveHeight` uniform value
+        const waveFrequency = 0.5; // Match this to your `waveFrequency` uniform value
+
+        // Calculate the buoy's Y position based on the wave height at its X/Z
+        const buoyWaveHeight =
+            Math.sin(buoy.position.x * waveFrequency + elapsedTime) * waveHeight * 0.8 +
+            Math.cos(buoy.position.z * waveFrequency + elapsedTime * 1.5) * waveHeight * 0.6;
+
+        buoy.position.y = buoyWaveHeight; // Update buoy's Y position
+        buoy.rotation.z = Math.sin(elapsedTime * 1.5) * 0.1; // Add tilt with waves
+        buoy.rotation.x = Math.cos(elapsedTime * 1.5) * 0.1; // Add tilt with waves
     }
 
     // Render Scene
@@ -170,4 +168,3 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
