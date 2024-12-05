@@ -4,18 +4,19 @@ import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000011); // Dark blue for night sky
+scene.background = new THREE.Color(0x88ccea); // Light blue for icy atmosphere
+scene.fog = new THREE.Fog(0x88ccea, 10, 100); // Fog for cold atmosphere
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000);
+renderer.setClearColor(0x88ccea);
 document.body.appendChild(renderer.domElement);
 
 // Camera Setup
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 5, 15);
+camera.position.set(0, 10, 30);
 scene.add(camera);
 
 // Orbit Controls
@@ -23,7 +24,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
 const dynamicLight = new THREE.PointLight(0xffffff, 4, 50);
-dynamicLight.position.set(0, 5, 0); // Initial light position
+dynamicLight.position.set(10, 20, 10); // Initial light position
 scene.add(dynamicLight);
 
 // Ocean Geometry
@@ -34,35 +35,60 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 1.5 }, // Increased wave height
-        waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
-        deepColor: { value: new THREE.Color(0x001d3a) },
-        shallowColor: { value: new THREE.Color(0x1e90ff) },
+        waveHeight: { value: 1.5 }, // Wave height
+        waveFrequency: { value: 0.5 }, // Wave frequency
+        deepColor: { value: new THREE.Color(0x88ccea) }, // Icy deep water color
+        shallowColor: { value: new THREE.Color(0xd8f1f9) }, // Icy shallow water color
+        lightColor: { value: new THREE.Color(0xffffff) }, // Light specular highlights
+        lightPosition: { value: new THREE.Vector3(10, 20, 10) }, // Dynamic light source
     },
     vertexShader: `
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
         varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
 
         void main() {
             vUv = uv;
+            vPosition = position;
             vec3 pos = position;
+            
+            // Complex wave patterns using sine and cosine
             pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
             pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+            pos.y += sin(pos.x * waveFrequency * 0.5 + pos.z * 0.3 + time) * waveHeight * 0.2;
+
+            vNormal = normal; // Pass normal for specular lighting
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
     fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
+        uniform vec3 lightColor;
+        uniform vec3 lightPosition;
         varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
 
         void main() {
-            vec3 color = mix(shallowColor, deepColor, vUv.y);
-            gl_FragColor = vec4(color, 1.0);
+            // Fresnel effect for icy water appearance
+            float fresnel = pow(1.0 - dot(vNormal, normalize(vPosition - lightPosition)), 3.0);
+            vec3 baseColor = mix(shallowColor, deepColor, vUv.y);
+            
+            // Specular reflection for shininess
+            vec3 lightDir = normalize(lightPosition - vPosition);
+            float specular = max(dot(vNormal, lightDir), 0.0);
+            specular = pow(specular, 16.0) * fresnel;
+
+            // Combine base color with specular highlights
+            vec3 finalColor = baseColor + lightColor * specular;
+            gl_FragColor = vec4(finalColor, 1.0);
         }
     `,
+    side: THREE.DoubleSide, // Ensure visibility from all angles
 });
 
 // Add Ocean Mesh
